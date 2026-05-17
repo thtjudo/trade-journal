@@ -351,50 +351,55 @@ export default function TimeOfDayAnalysis({ trades }: Props) {
           Key Insights
         </h3>
 
-        <div className="space-y-2.5">
-          {insights.best && insights.best.count > 0 && (
-            <InsightRow
-              color="text-profit"
-              label="Best window"
-              value={`${insights.best.label} — avg ${fmtDollar(insights.best.avgPnl)}/trade`}
-            />
-          )}
-          {insights.worst && insights.worst.count > 0 && (
-            <InsightRow
-              color="text-loss"
-              label="Worst window"
-              value={`${insights.worst.label} — avg ${fmtDollar(insights.worst.avgPnl)}/trade`}
-            />
-          )}
-          {insights.mostActive && insights.mostActive.count > 0 && (
-            <InsightRow
-              color="text-brand"
-              label="Most active"
-              value={`${insights.mostActive.label} — ${insights.mostActive.count} trades`}
-            />
-          )}
-          {insights.dangerZones.length > 0 && (
-            <div className="mt-3 rounded-md border border-loss/20 bg-loss-muted px-3 py-2.5">
-              <p className="text-[13px] font-medium text-loss mb-1.5">
-                Danger Zones
-              </p>
-              {insights.dangerZones.map((dz) => (
-                <p
-                  key={dz.startMin}
-                  className="text-xs text-loss/80"
-                >
-                  {dz.label} — {dz.winRate.toFixed(0)}% win rate
-                  across {dz.count} trades
-                </p>
-              ))}
-            </div>
-          )}
-          {!insights.best?.count && (
-            <p className="text-xs text-tertiary">
-              Not enough data to generate insights.
+        {(insights.best?.count || insights.worst?.count || insights.mostActive?.count) ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {insights.best && insights.best.count > 0 && (
+              <InsightCard
+                label="Best window"
+                value={`${fmtDollar(insights.best.avgPnl)}/trade`}
+                sub={`${insights.best.label} · ${insights.best.count} trades`}
+                tone="profit"
+              />
+            )}
+            {insights.worst && insights.worst.count > 0 && (
+              <InsightCard
+                label="Worst window"
+                value={`${fmtDollar(insights.worst.avgPnl)}/trade`}
+                sub={`${insights.worst.label} · ${insights.worst.count} trades`}
+                tone="loss"
+              />
+            )}
+            {insights.mostActive && insights.mostActive.count > 0 && (
+              <InsightCard
+                label="Most active"
+                value={`${insights.mostActive.count} trades`}
+                sub={insights.mostActive.label}
+                tone="brand"
+              />
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-tertiary">
+            Not enough data to generate insights.
+          </p>
+        )}
+
+        {insights.dangerZones.length > 0 && (
+          <div className="mt-4 rounded-md border border-loss/20 bg-loss-muted px-3 py-2.5">
+            <p className="text-[13px] font-medium text-loss mb-1.5">
+              Danger Zones
             </p>
-          )}
-        </div>
+            {insights.dangerZones.map((dz) => (
+              <p
+                key={dz.startMin}
+                className="text-xs text-loss/80"
+              >
+                {dz.label} — {dz.winRate.toFixed(0)}% win rate
+                across {dz.count} trades
+              </p>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -486,26 +491,40 @@ function StatRow({
   );
 }
 
-function InsightRow({
-  color,
+function InsightCard({
   label,
   value,
+  sub,
+  tone,
 }: {
-  color: string;
   label: string;
   value: string;
+  sub: string;
+  tone: "profit" | "loss" | "brand";
 }) {
+  const valueColor =
+    tone === "profit" ? "text-profit" : tone === "loss" ? "text-loss" : "text-brand";
+  const accent =
+    tone === "profit"
+      ? "border-profit/20 bg-profit-muted"
+      : tone === "loss"
+        ? "border-loss/20 bg-loss-muted"
+        : "border-brand/20 bg-brand-muted";
+
   return (
-    <div className="flex items-baseline gap-2">
-      <span
+    <div className={cn("rounded-lg border px-3.5 py-3", accent)}>
+      <p className="text-[11px] font-medium text-tertiary uppercase tracking-wide">
+        {label}
+      </p>
+      <p
         className={cn(
-          "text-[13px] font-medium shrink-0",
-          color,
+          "mt-1 text-lg font-medium font-mono tabular-nums leading-tight tracking-tight",
+          valueColor,
         )}
       >
-        {label}
-      </span>
-      <span className="text-xs text-secondary">{value}</span>
+        {value}
+      </p>
+      <p className="mt-1 text-[11px] text-secondary">{sub}</p>
     </div>
   );
 }

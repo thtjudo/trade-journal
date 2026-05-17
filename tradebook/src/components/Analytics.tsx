@@ -324,6 +324,7 @@ function FloatSizePerformance({ trades }: { trades: Trade[] }) {
 
 export default function Analytics() {
   const [filters, updateFilters] = useDashboardFilters();
+  const [activeTab, setActiveTab] = useState<TabKey>("timing");
 
   const { data: trades = [], isLoading, isError, refetch } = useAllTrades(filters.from, filters.to);
 
@@ -370,8 +371,6 @@ export default function Analytics() {
       </div>
     );
   }
-
-  const [activeTab, setActiveTab] = useState<TabKey>("timing");
 
   return (
     <div className="space-y-6">

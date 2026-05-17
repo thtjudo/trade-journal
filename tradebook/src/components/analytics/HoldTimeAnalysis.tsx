@@ -207,25 +207,28 @@ export default function HoldTimeAnalysis({ trades }: Props) {
   const minPos = Math.min(...points.map((p) => p.positionSize));
   const posRange = maxPos - minPos || 1;
 
-  const toX = (hold: number) => PAD.l + (hold / maxHold) * cW;
+  // Extend axis bounds to nice tick boundaries so labels never render outside the chart
+  const xStep = niceStep(maxHold, 5);
+  const xMax = Math.ceil(maxHold / xStep) * xStep || xStep;
+
+  const yStep = niceStep(pnlRange, 4);
+  const yMin = Math.floor(minPnl / yStep) * yStep;
+  const yMax = Math.ceil(maxPnl / yStep) * yStep;
+  const yScale = yMax - yMin || 1;
+
+  const toX = (hold: number) => PAD.l + (hold / xMax) * cW;
   const toY = (pnl: number) =>
-    PAD.t + cH - ((pnl - minPnl) / pnlRange) * cH;
+    PAD.t + cH - ((pnl - yMin) / yScale) * cH;
   const toR = (pos: number) =>
     3 + ((pos - minPos) / posRange) * 7;
 
   const zeroY = toY(0);
 
-  // Axis ticks
-  const xStep = niceStep(maxHold, 5);
   const xTicks: number[] = [];
-  for (let v = 0; v <= maxHold + xStep * 0.01; v += xStep)
-    xTicks.push(v);
+  for (let v = 0; v <= xMax + xStep * 0.01; v += xStep) xTicks.push(v);
 
-  const yStep = niceStep(pnlRange, 4);
-  const yStart = Math.floor(minPnl / yStep) * yStep;
   const yTicks: number[] = [];
-  for (let v = yStart; v <= maxPnl + yStep * 0.01; v += yStep)
-    yTicks.push(v);
+  for (let v = yMin; v <= yMax + yStep * 0.01; v += yStep) yTicks.push(v);
 
   function handleDotEnter(point: TradePoint, e: React.PointerEvent) {
     if (!containerRef.current) return;
@@ -235,13 +238,53 @@ export default function HoldTimeAnalysis({ trades }: Props) {
     setTooltip({ point, x, y, flipX: x > rect.width * 0.6 });
   }
 
+  // Bubble legend reference sizes (uses same toR scale)
+  const legendSizes =
+    maxPos > minPos
+      ? [
+          { label: fmtDollar(minPos), r: toR(minPos) },
+          { label: fmtDollar((minPos + maxPos) / 2), r: toR((minPos + maxPos) / 2) },
+          { label: fmtDollar(maxPos), r: toR(maxPos) },
+        ]
+      : [{ label: fmtDollar(maxPos), r: toR(maxPos) }];
+
   return (
     <div className="space-y-8">
       {/* ── Scatter plot ──────────────────────────────────────── */}
-      <div className="border-t border-white/[0.04] pt-4">
-        <h3 className="text-[13px] font-medium text-secondary mb-4">
-          Hold Time vs Profit / Loss
-        </h3>
+      <div className="rounded-lg border border-white/[0.06] bg-white/[0.015] p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-4 mb-3 flex-wrap">
+          <div>
+            <h3 className="text-[13px] font-medium text-primary">
+              Hold Time vs Profit / Loss
+            </h3>
+            <p className="text-[11px] text-tertiary mt-0.5">
+              Each dot is a trade. Size = position size ($). Green = win, red = loss.
+            </p>
+          </div>
+
+          {/* Bubble size legend */}
+          <div className="flex items-center gap-3 text-[10px] text-tertiary">
+            <span className="text-[10px] text-tertiary">Position size</span>
+            <div className="flex items-end gap-3">
+              {legendSizes.map((l) => (
+                <div key={l.label} className="flex flex-col items-center gap-1">
+                  <svg width={l.r * 2 + 2} height={l.r * 2 + 2}>
+                    <circle
+                      cx={l.r + 1}
+                      cy={l.r + 1}
+                      r={l.r}
+                      fill="#71717a"
+                      fillOpacity={0.45}
+                      stroke="#71717a"
+                      strokeOpacity={0.7}
+                    />
+                  </svg>
+                  <span className="font-mono">{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         <div ref={containerRef} className="relative">
           <svg
@@ -249,16 +292,38 @@ export default function HoldTimeAnalysis({ trades }: Props) {
             viewBox={`0 0 ${W} ${H}`}
             className="overflow-visible"
           >
-            {/* zero line */}
+            {/* gridlines */}
+            {yTicks.map((v) => (
+              <line
+                key={`grid-${v}`}
+                x1={PAD.l}
+                y1={toY(v)}
+                x2={W - PAD.r}
+                y2={toY(v)}
+                stroke="rgba(255,255,255,0.03)"
+                strokeWidth="1"
+              />
+            ))}
+            {/* break-even (zero) line */}
             <line
               x1={PAD.l}
               y1={zeroY}
               x2={W - PAD.r}
               y2={zeroY}
-              stroke="rgba(255,255,255,0.06)"
+              stroke="rgba(255,255,255,0.18)"
               strokeWidth="1"
               strokeDasharray="4,4"
             />
+            <text
+              x={W - PAD.r - 4}
+              y={zeroY - 4}
+              fill="#71717a"
+              fontSize="9"
+              textAnchor="end"
+              fontFamily="Inter, sans-serif"
+            >
+              break-even
+            </text>
 
             {/* X axis */}
             <line
@@ -299,7 +364,11 @@ export default function HoldTimeAnalysis({ trades }: Props) {
                   textAnchor="middle"
                   fontFamily="Inter, sans-serif"
                 >
-                  {v >= 60 ? `${(v / 60).toFixed(0)}h` : `${Math.round(v)}m`}
+                  {v < 60
+                    ? `${Math.round(v)}m`
+                    : v % 60 === 0
+                      ? `${v / 60}h`
+                      : `${(v / 60).toFixed(1)}h`}
                 </text>
               </g>
             ))}
@@ -341,10 +410,10 @@ export default function HoldTimeAnalysis({ trades }: Props) {
                     cy={toY(p.pnl)}
                     r={toR(p.positionSize)}
                     fill={win ? "#22c55e" : "#ef4444"}
-                    fillOpacity={0.55}
+                    fillOpacity={0.65}
                     stroke={win ? "#22c55e" : "#ef4444"}
                     strokeWidth="1"
-                    strokeOpacity={0.8}
+                    strokeOpacity={0.85}
                     className="cursor-pointer"
                     style={{ transition: "r 0.15s" }}
                     onPointerEnter={(e) => handleDotEnter(p, e)}
