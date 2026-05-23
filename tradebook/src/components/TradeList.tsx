@@ -144,16 +144,20 @@ export default function TradeList({
           No trades yet
         </h2>
         <p className="text-[13px] text-tertiary text-center max-w-xs">
-          Start logging to see your trade history here.
+          Import your broker's CSV to fill your history in seconds — or log a
+          trade manually.
         </p>
-        {onLogTrade && (
-          <button
-            onClick={onLogTrade}
-            className="mt-2 bg-brand hover:bg-brand/90 text-white font-medium text-[13px] px-5 py-2 rounded-[6px] transition-colors"
-          >
-            Log Your First Trade
-          </button>
-        )}
+        <div className="mt-2 flex items-center gap-3">
+          <TradeImport variant="cta" />
+          {onLogTrade && (
+            <button
+              onClick={onLogTrade}
+              className="text-[13px] font-medium text-secondary hover:text-primary border border-border hover:border-border-hover px-5 py-2 rounded-[6px] transition-colors"
+            >
+              Log manually
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -232,9 +236,9 @@ export default function TradeList({
           <button
             onClick={handleExportCsv}
             disabled={exporting}
-            className="text-[12px] text-tertiary hover:text-white transition-colors disabled:opacity-50"
+            className="text-[12px] text-secondary hover:text-primary border border-border hover:border-border-hover px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
           >
-            {exporting ? "Exporting..." : "Export CSV"}
+            {exporting ? "Exporting..." : "Export"}
           </button>
         </div>
       </div>

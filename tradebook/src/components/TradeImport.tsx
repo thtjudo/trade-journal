@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 
 import { useToast } from "./Toast";
 import { useImportTrades } from "../hooks/useMutations";
+import { cn } from "../lib/utils";
 
 const REQUIRED_FIELDS = [
   "ticker",
@@ -79,7 +80,13 @@ function normalizeSide(val: string): "long" | "short" | null {
   return null;
 }
 
-export default function TradeImport() {
+export default function TradeImport({
+  variant = "primary",
+  label,
+}: {
+  variant?: "primary" | "cta";
+  label?: string;
+}) {
   const { showToast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const importTrades = useImportTrades();
@@ -232,6 +239,13 @@ export default function TradeImport() {
   const previewRows = rows.slice(0, 5);
   const allFields: Field[] = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS];
 
+  const isCta = variant === "cta";
+  const triggerClass = cn(
+    "flex items-center font-medium text-[13px] bg-brand hover:bg-brand/90 text-white transition-colors",
+    isCta ? "gap-2 px-5 py-2 rounded-[6px]" : "gap-1.5 px-3 py-1.5 rounded-md"
+  );
+  const buttonLabel = label ?? (isCta ? "Import CSV" : "Import");
+
   return (
     <>
       <input
@@ -241,20 +255,17 @@ export default function TradeImport() {
         className="hidden"
         onChange={handleFileChange}
       />
-      <button
-        onClick={() => fileRef.current?.click()}
-        className="flex items-center gap-1.5 text-xs text-tertiary hover:text-primary border border-border hover:border-border-hover px-3 py-1.5 rounded-md transition-colors"
-      >
+      <button onClick={() => fileRef.current?.click()} className={triggerClass}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
-          className="w-3.5 h-3.5"
+          className={isCta ? "w-4 h-4" : "w-3.5 h-3.5"}
         >
           <path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z" />
           <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
         </svg>
-        Import
+        {buttonLabel}
       </button>
 
       {/* Preview / mapping modal */}

@@ -375,6 +375,14 @@ tbody tr:hover {
   background-color: var(--color-surface-1);
 }
 
+/* ── View transitions — expo-out easing app-wide ── */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 0.25s;
+  animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+}
+
 /* ── Keyframes ── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-6px); }
