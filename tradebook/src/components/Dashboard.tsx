@@ -13,7 +13,8 @@ import EmotionPerformance from "./dashboard/EmotionPerformance";
 import RecentTrades from "./dashboard/RecentTrades";
 import { buildDailyStats, buildTagStats, buildEmotionStats, calcDrawdownInfo } from "./dashboard/helpers";
 import { useSubscription } from "../contexts/SubscriptionContext";
-import DashboardFilters, { FilterSummary, QuickDatePills, useDashboardFilters, applyFilters } from "./dashboard/DashboardFilters";
+import { useDashboardFilters, applyFilters } from "./dashboard/filters";
+import FilterBar from "./FilterBar";
 import { useAllTrades, useMissedTrades } from "../hooks/useTrades";
 import {
   TrendingUp,
@@ -291,29 +292,22 @@ export default function Dashboard({
     <div className="space-y-8">
       {/* Page header */}
       <div>
-        <h2 className="text-base font-medium text-white tracking-tight">
+        <h2 className="page-title">
           Dashboard
         </h2>
-        <p className="text-[13px] text-zinc-500 mt-1">
+        <p className="numeric text-[13px] text-zinc-500 mt-2 leading-tight">
           {filteredTrades.length} trade{filteredTrades.length !== 1 ? "s" : ""} across {dailyStats.length} session{dailyStats.length !== 1 ? "s" : ""}
         </p>
       </div>
 
       {/* Filters */}
-      <div className="space-y-3">
-        <QuickDatePills filters={filters} onUpdate={updateFilters} />
-        {proUser && (
-          <>
-            <DashboardFilters trades={trades} filters={filters} onUpdate={updateFilters} />
-            <FilterSummary
-              filtered={filteredTrades.length}
-              total={trades.length}
-              from={filters.from}
-              to={filters.to}
-            />
-          </>
-        )}
-      </div>
+      <FilterBar
+        trades={trades}
+        filters={filters}
+        onUpdate={updateFilters}
+        filtered={filteredTrades.length}
+        total={trades.length}
+      />
 
       {/* Today's Summary */}
       {proUser && hasTrades && <TodaySummary trades={filteredTrades} />}
@@ -321,7 +315,7 @@ export default function Dashboard({
       {hasTrades && (
         <>
           {/* Hero Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               large
               label="Total P&L"
@@ -361,14 +355,16 @@ export default function Dashboard({
 
           {/* Equity Curve — full width */}
           {equityPoints.length >= 2 && (
-            <div className="pt-4 border-t border-white/[0.04]">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[13px] font-medium text-secondary">
+            <>
+              <div className="section-divider" />
+              <div>
+              <div className="flex items-center justify-between mb-4">
+                <p className="metric-label">
                   Equity Curve
-                </h3>
+                </p>
                 <span
                   className={cn(
-                    "text-[12px] font-medium font-mono",
+                    "numeric text-[12px] font-medium",
                     totalPnl >= 0 ? "text-profit" : "text-loss"
                   )}
                 >
@@ -386,7 +382,8 @@ export default function Dashboard({
                     : undefined
                 }
               />
-            </div>
+              </div>
+            </>
           )}
 
           {/* Calendar Heatmap */}

@@ -23,15 +23,15 @@ export function StatCard({
   large?: boolean;
 }) {
   return (
-    <div className={cn("py-2 pl-3 border-l-2 border-white/[0.06]", large && "py-3")}>
-      <p className="text-[12px] text-tertiary mb-0.5">
+    <div className={cn("metric-card", large && "min-h-[120px]")}>
+      <p className="metric-label mb-3">
         {label}
       </p>
       <div className="flex items-baseline gap-2">
         <p
           className={cn(
-            "font-medium font-mono tabular-nums leading-tight tracking-tight",
-            large ? "text-3xl" : "text-xl",
+            "numeric font-semibold leading-tight",
+            large ? "text-[32px] sm:text-[40px]" : "text-[24px]",
             color || "text-primary"
           )}
         >
@@ -52,7 +52,7 @@ export function StatCard({
           </span>
         )}
       </div>
-      {sub && <p className="text-[12px] text-tertiary mt-0.5">{sub}</p>}
+      {sub && <p className="numeric text-[11px] text-tertiary mt-2 leading-tight">{sub}</p>}
     </div>
   );
 }
@@ -66,7 +66,7 @@ export function SectionHeader({
 }) {
   return (
     <div>
-      <h3 className="text-[13px] font-medium text-secondary mb-0.5">{title}</h3>
+      <p className="metric-label mb-1">{title}</p>
       {description && (
         <p className="text-[12px] text-zinc-500">{description}</p>
       )}

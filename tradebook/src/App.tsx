@@ -76,7 +76,7 @@ export default function App() {
         onDoubleClick={() => sidebarCollapsed && setSidebarCollapsed(false)}
         className={cn(
           "hidden sm:flex flex-col border-r border-white/[0.04] bg-surface-0 shrink-0 transition-[width] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          sidebarCollapsed ? "w-[60px] cursor-pointer" : "w-[220px]"
+          sidebarCollapsed ? "w-[60px] cursor-pointer" : "w-[240px]"
         )}
       >
         <Sidebar
@@ -95,7 +95,7 @@ export default function App() {
       )}
       <aside
         className={cn(
-          "fixed top-0 left-0 bottom-0 z-50 w-[220px] flex flex-col border-r border-white/[0.04] bg-surface-0 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] sm:hidden",
+          "fixed top-0 left-0 bottom-0 z-50 w-[240px] flex flex-col border-r border-white/[0.04] bg-surface-0 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] sm:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -129,7 +129,7 @@ export default function App() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-8 pb-20 sm:pb-8">
+          <div className="max-w-[1200px] mx-auto px-4 sm:px-8 pt-8 pb-20 sm:pb-8">
               <div key={location.pathname} className="animate-page-enter">
                 <Suspense fallback={<LazySpinner />}>
                   <Routes>

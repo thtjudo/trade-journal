@@ -191,9 +191,9 @@ export default function TimeOfDayAnalysis({ trades }: Props) {
     <div className="space-y-8">
       {/* ── Bar chart ───────────────────────────────────────── */}
       <div className="border-t border-white/[0.04] pt-4">
-        <h3 className="text-[13px] font-medium text-secondary mb-4">
+        <p className="metric-label mb-4">
           Profit / Loss by Time of Day
-        </h3>
+        </p>
 
         <svg
           width="100%"
@@ -325,9 +325,9 @@ export default function TimeOfDayAnalysis({ trades }: Props) {
 
       {/* ── First 30 min vs Rest of Day ─────────────────────── */}
       <div className="border-t border-white/[0.04] pt-4">
-        <h3 className="text-[13px] font-medium text-secondary mb-4">
+        <p className="metric-label mb-4">
           First 30 min vs Rest of Day
-        </h3>
+        </p>
 
         <div className="grid grid-cols-2 gap-4">
           <ComparisonColumn
@@ -347,9 +347,9 @@ export default function TimeOfDayAnalysis({ trades }: Props) {
 
       {/* ── Key Insights ────────────────────────────────────── */}
       <div className="border-t border-white/[0.04] pt-4">
-        <h3 className="text-[13px] font-medium text-secondary mb-3">
+        <p className="metric-label mb-4">
           Key Insights
-        </h3>
+        </p>
 
         {(insights.best?.count || insights.worst?.count || insights.mostActive?.count) ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

@@ -7,9 +7,9 @@ export default function SetupPerformance({
 }) {
   return (
     <div>
-      <h3 className="text-[13px] font-medium text-secondary mb-3">
+      <p className="metric-label mb-4">
         By Setup
-      </h3>
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full text-[13px] text-left">
           <thead>

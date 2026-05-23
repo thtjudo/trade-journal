@@ -1,138 +1,16 @@
 import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
 import type { Trade, CatalystType } from "../../types/trade";
 import TagSelect from "../TagSelect";
-import PaywallGate from "../PaywallGate";
 import { cn } from "../../lib/utils";
-
-const CATALYST_OPTIONS: { value: CatalystType; label: string }[] = [
-  { value: "earnings", label: "Earnings" },
-  { value: "news_pr", label: "News/PR" },
-  { value: "fda", label: "FDA" },
-  { value: "sec_filing", label: "SEC Filing" },
-  { value: "short_squeeze", label: "Short Squeeze" },
-  { value: "sympathy", label: "Sympathy" },
-  { value: "technical", label: "Technical" },
-  { value: "other", label: "Other" },
-];
-
-type QuickRange = "7d" | "30d" | "60d" | "90d" | "1yr" | "All";
-
-const QUICK_LABELS: Record<QuickRange, string> = {
-  "7d": "7D",
-  "30d": "30D",
-  "60d": "60D",
-  "90d": "90D",
-  "1yr": "1Y",
-  "All": "All",
-};
-
-function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function getQuickRange(key: QuickRange): { from: string; to: string } {
-  const now = new Date();
-  const to = toDateStr(now);
-  if (key === "All") return { from: "", to: "" };
-  const days = key === "7d" ? 7 : key === "30d" ? 30 : key === "60d" ? 60 : key === "90d" ? 90 : 365;
-  const from = new Date(now);
-  from.setDate(from.getDate() - days);
-  return { from: toDateStr(from), to };
-}
-
-function defaultFrom(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 30);
-  return toDateStr(d);
-}
-
-function defaultTo(): string {
-  return toDateStr(new Date());
-}
-
-export interface DashboardFilterState {
-  from: string;
-  to: string;
-  ticker: string;
-  side: "all" | "long" | "short";
-  catalysts: CatalystType[];
-  tags: string[];
-}
-
-function activeQuickRange(from: string, to: string): QuickRange | null {
-  const today = toDateStr(new Date());
-  if (!from && !to) return "All";
-  for (const key of ["7d", "30d", "60d", "90d", "1yr"] as QuickRange[]) {
-    const r = getQuickRange(key);
-    if (r.from === from && (to === today || to === r.to)) return key;
-  }
-  return null;
-}
-
-export function useDashboardFilters(): [DashboardFilterState, (patch: Partial<DashboardFilterState>) => void] {
-  const [params, setParams] = useSearchParams();
-
-  const state: DashboardFilterState = useMemo(() => ({
-    from: params.get("from") ?? defaultFrom(),
-    to: params.get("to") ?? defaultTo(),
-    ticker: params.get("ticker") ?? "",
-    side: (params.get("side") as DashboardFilterState["side"]) || "all",
-    catalysts: params.get("catalyst")
-      ? (params.get("catalyst")!.split(",") as CatalystType[])
-      : [],
-    tags: params.get("tags") ? params.get("tags")!.split(",") : [],
-  }), [params]);
-
-  function update(patch: Partial<DashboardFilterState>) {
-    setParams((prev) => {
-      const next = new URLSearchParams(prev);
-      const merged = { ...state, ...patch };
-
-      if (merged.from && merged.from !== defaultFrom()) {
-        next.set("from", merged.from);
-      } else {
-        next.delete("from");
-      }
-      if (merged.to && merged.to !== defaultTo()) {
-        next.set("to", merged.to);
-      } else {
-        next.delete("to");
-      }
-
-      if (merged.ticker) next.set("ticker", merged.ticker);
-      else next.delete("ticker");
-
-      if (merged.side !== "all") next.set("side", merged.side);
-      else next.delete("side");
-
-      if (merged.catalysts.length > 0) next.set("catalyst", merged.catalysts.join(","));
-      else next.delete("catalyst");
-
-      if (merged.tags.length > 0) next.set("tags", merged.tags.join(","));
-      else next.delete("tags");
-
-      return next;
-    }, { replace: true });
-  }
-
-  return [state, update];
-}
-
-export function applyFilters(trades: Trade[], f: DashboardFilterState): Trade[] {
-  return trades.filter((t) => {
-    if (f.from && t.trade_date < f.from) return false;
-    if (f.to && t.trade_date > f.to) return false;
-    if (f.ticker && !t.ticker.toLowerCase().includes(f.ticker.toLowerCase())) return false;
-    if (f.side !== "all" && t.side !== f.side) return false;
-    if (f.catalysts.length > 0 && (!t.catalyst_type || !f.catalysts.includes(t.catalyst_type))) return false;
-    if (f.tags.length > 0 && !f.tags.some((tag) => t.tags.includes(tag))) return false;
-    return true;
-  });
-}
-
-const QUICK_KEYS: QuickRange[] = ["7d", "30d", "60d", "90d", "1yr", "All"];
-const SIDES = ["all", "long", "short"] as const;
+import {
+  type DashboardFilterState,
+  CATALYST_OPTIONS,
+  SIDES,
+  QUICK_KEYS,
+  QUICK_LABELS,
+  getQuickRange,
+  activeQuickRange,
+} from "./filters";
 
 const pillBase =
   "px-2 py-1 rounded-[4px] text-[12px] font-medium transition-colors border cursor-pointer";
@@ -146,7 +24,9 @@ const inputClass =
 const labelClass =
   "block text-[13px] font-medium text-secondary mb-1.5";
 
-export default function DashboardFilters({
+/** The filter fields themselves, laid out to stack inside the FilterBar popover.
+ *  No paywall wrapper here — gating lives in <FilterBar>. */
+export function FilterFields({
   trades,
   filters,
   onUpdate,
@@ -169,98 +49,94 @@ export default function DashboardFilters({
   }
 
   return (
-    <PaywallGate feature="Advanced Filters">
-      <div className="py-3 border-t border-white/[0.04] mb-4">
-        <div className="flex flex-wrap gap-x-6 gap-y-4 items-end">
-          {/* Date range */}
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>Date Range</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={filters.from}
-                onChange={(e) => onUpdate({ from: e.target.value })}
-                className={inputClass + " w-[140px]"}
-              />
-              <span className="text-tertiary text-xs">to</span>
-              <input
-                type="date"
-                value={filters.to}
-                onChange={(e) => onUpdate({ to: e.target.value })}
-                className={inputClass + " w-[140px]"}
-              />
-            </div>
-          </div>
-
-          {/* Ticker */}
-          <div className="flex flex-col gap-1.5 min-w-[140px]">
-            <label className={labelClass}>Ticker</label>
-            <input
-              type="text"
-              list="filter-tickers"
-              value={filters.ticker}
-              onChange={(e) => onUpdate({ ticker: e.target.value })}
-              placeholder="e.g. AAPL"
-              className={inputClass}
-            />
-            <datalist id="filter-tickers">
-              {tickers.map((t) => (
-                <option key={t} value={t} />
-              ))}
-            </datalist>
-          </div>
-
-          {/* Side */}
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>Side</span>
-            <div className="flex gap-1">
-              {SIDES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => onUpdate({ side: s })}
-                  className={cn(
-                    pillBase,
-                    filters.side === s ? pillActive : pillInactive
-                  )}
-                >
-                  {s === "all" ? "All" : s === "long" ? "Long" : "Short"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Catalyst Type */}
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>Catalyst</span>
-            <div className="flex flex-wrap gap-1.5">
-              {CATALYST_OPTIONS.map((c) => {
-                const active = filters.catalysts.includes(c.value);
-                return (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => toggleCatalyst(c.value)}
-                    className={cn(pillBase, active ? pillActive : pillInactive)}
-                  >
-                    {c.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="flex flex-col gap-1.5 w-full">
-            <span className={labelClass}>Tags</span>
-            <TagSelect
-              selected={filters.tags}
-              onChange={(tags) => onUpdate({ tags })}
-            />
-          </div>
+    <div className="space-y-4">
+      {/* Date range */}
+      <div className="flex flex-col gap-1.5">
+        <span className={labelClass}>Date Range</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={filters.from}
+            onChange={(e) => onUpdate({ from: e.target.value })}
+            className={inputClass + " flex-1 min-w-0"}
+          />
+          <span className="text-tertiary text-xs">to</span>
+          <input
+            type="date"
+            value={filters.to}
+            onChange={(e) => onUpdate({ to: e.target.value })}
+            className={inputClass + " flex-1 min-w-0"}
+          />
         </div>
       </div>
-    </PaywallGate>
+
+      {/* Ticker */}
+      <div className="flex flex-col gap-1.5">
+        <label className={labelClass}>Ticker</label>
+        <input
+          type="text"
+          list="filter-tickers"
+          value={filters.ticker}
+          onChange={(e) => onUpdate({ ticker: e.target.value })}
+          placeholder="e.g. AAPL"
+          className={inputClass}
+        />
+        <datalist id="filter-tickers">
+          {tickers.map((t) => (
+            <option key={t} value={t} />
+          ))}
+        </datalist>
+      </div>
+
+      {/* Side */}
+      <div className="flex flex-col gap-1.5">
+        <span className={labelClass}>Side</span>
+        <div className="flex gap-1">
+          {SIDES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onUpdate({ side: s })}
+              className={cn(
+                pillBase,
+                filters.side === s ? pillActive : pillInactive
+              )}
+            >
+              {s === "all" ? "All" : s === "long" ? "Long" : "Short"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Catalyst Type */}
+      <div className="flex flex-col gap-1.5">
+        <span className={labelClass}>Catalyst</span>
+        <div className="flex flex-wrap gap-1.5">
+          {CATALYST_OPTIONS.map((c) => {
+            const active = filters.catalysts.includes(c.value);
+            return (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => toggleCatalyst(c.value)}
+                className={cn(pillBase, active ? pillActive : pillInactive)}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tags */}
+      <div className="flex flex-col gap-1.5">
+        <span className={labelClass}>Tags</span>
+        <TagSelect
+          selected={filters.tags}
+          onChange={(tags) => onUpdate({ tags })}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -288,40 +164,5 @@ export function QuickDatePills({
         </button>
       ))}
     </div>
-  );
-}
-
-export function FilterSummary({
-  filtered,
-  total,
-  from,
-  to,
-}: {
-  filtered: number;
-  total: number;
-  from: string;
-  to: string;
-}) {
-  if (filtered === total && !from && !to) return null;
-
-  function fmtDate(d: string) {
-    if (!d) return "";
-    const dt = new Date(d + "T00:00:00");
-    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  }
-
-  const range =
-    from && to
-      ? ` · ${fmtDate(from)} – ${fmtDate(to)}`
-      : from
-        ? ` · from ${fmtDate(from)}`
-        : to
-          ? ` · until ${fmtDate(to)}`
-          : "";
-
-  return (
-    <p className="text-xs text-tertiary mb-4">
-      Showing {filtered} of {total} trades{range}
-    </p>
   );
 }

@@ -481,9 +481,9 @@ export default function HoldTimeAnalysis({ trades }: Props) {
 
       {/* ── Bucketed stats ────────────────────────────────────── */}
       <div className="border-t border-white/[0.04] pt-4">
-        <h3 className="text-[13px] font-medium text-secondary mb-4">
+        <p className="metric-label mb-4">
           Hold Time Breakdown
-        </h3>
+        </p>
 
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] text-left">
@@ -573,9 +573,9 @@ export default function HoldTimeAnalysis({ trades }: Props) {
 
       {/* ── Auto-insights ─────────────────────────────────────── */}
       <div className="border-t border-white/[0.04] pt-4">
-        <h3 className="text-[13px] font-medium text-secondary mb-3">
+        <p className="metric-label mb-4">
           Hold Time Insights
-        </h3>
+        </p>
 
         <div className="space-y-2.5">
           {sweetSpot && (

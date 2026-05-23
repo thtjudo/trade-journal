@@ -6,10 +6,11 @@ export default function DailyBreakdown({
   dailyStats: DayStats[];
 }) {
   return (
-    <div className="pt-4 border-t border-white/[0.04]">
-      <h3 className="text-[13px] font-medium text-secondary mb-3">
+    <div>
+      <div className="section-divider mb-8" />
+      <p className="metric-label mb-4">
         Daily Breakdown
-      </h3>
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full text-[13px] text-left">
           <thead>

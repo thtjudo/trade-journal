@@ -1,14 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { BarChart3 } from "lucide-react";
 import { cn } from "../lib/utils";
 import type { Trade, CatalystType } from "../types/trade";
 import { calcPnl } from "../lib/calc";
-import DashboardFilters, {
-  FilterSummary,
-  QuickDatePills,
-  useDashboardFilters,
-  applyFilters,
-} from "./dashboard/DashboardFilters";
+import { useDashboardFilters, applyFilters } from "./dashboard/filters";
+import FilterBar from "./FilterBar";
 import TimeOfDayAnalysis from "./analytics/TimeOfDayAnalysis";
 import HoldTimeAnalysis from "./analytics/HoldTimeAnalysis";
 import TiltDetection from "./analytics/TiltDetection";
@@ -69,6 +65,213 @@ function TabBar({
   );
 }
 
+/* -- Shared edge table ------------------------------------------ *
+ * Catalyst + Float share one presentation: rows sorted by total P/L,
+ * the winner weighted, losers dimmed, plus a computed takeaway line.
+ */
+
+interface EdgeRow {
+  key: string;
+  label: string;
+  count: number;
+  winRate: number;
+  avgPnl: number;
+  totalPnl: number;
+}
+
+// Below this many trades a row's win rate is noise — flag it, don't trust it.
+const SMALL_SAMPLE_MIN = 5;
+
+function fmtSignedDollar(v: number, decimals = 2): string {
+  const sign = v < 0 ? "−" : "+"; // unicode minus, matches the takeaway copy
+  const abs = Math.abs(v);
+  return `${sign}$${abs.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })}`;
+}
+
+/** One computed sentence per table: names the edge (highest total P/L) and the
+ *  leak (most-negative total), and flags when the leak is also the single
+ *  most-traded row — the real insight ("most volume into the worst setup").
+ *  Always derived from the rows, never hardcoded. */
+function buildTakeaway(sorted: EdgeRow[], volumeClause: string): ReactNode {
+  const edge = sorted[0].totalPnl > 0 ? sorted[0] : null;
+  const last = sorted[sorted.length - 1];
+  const leak = last.totalPnl < 0 ? last : null;
+
+  const mostTraded = [...sorted].sort((a, b) => b.count - a.count)[0];
+  const leakIsMostTraded = leak != null && mostTraded.key === leak.key;
+
+  const name = (r: EdgeRow) => (
+    <span className="text-primary font-medium">{r.label}</span>
+  );
+  const up = (s: string) => <span className="font-mono text-profit">{s}</span>;
+  const down = (s: string) => <span className="font-mono text-loss">{s}</span>;
+
+  const edgePart = edge && (
+    <>
+      {name(edge)} ({up(`${edge.winRate.toFixed(0)}% win`)},{" "}
+      {up(fmtSignedDollar(edge.totalPnl, 0))})
+    </>
+  );
+  const leakTail = leakIsMostTraded ? (
+    <> — and it’s {volumeClause}.</>
+  ) : (
+    <>.</>
+  );
+  const leakPart = leak && (
+    <>
+      {name(leak)} ({down(fmtSignedDollar(leak.totalPnl, 0))}){leakTail}
+    </>
+  );
+
+  if (edge && leak) {
+    return (
+      <>
+        Your edge is {edgePart}. Your biggest leak is {leakPart}
+      </>
+    );
+  }
+  if (edge) {
+    return <>Nothing’s leaking this period — your edge is {edgePart}.</>;
+  }
+  if (leak) {
+    return (
+      <>Nothing’s net positive this period — your biggest leak is {leakPart}</>
+    );
+  }
+  return <>Not enough P/L spread to call an edge yet.</>;
+}
+
+function EdgeTable({
+  rows,
+  columnLabel,
+  volumeClause,
+  emptyText,
+}: {
+  rows: EdgeRow[];
+  columnLabel: string;
+  volumeClause: string;
+  emptyText: string;
+}) {
+  // Best edge on top, biggest leak on bottom — top-to-bottom tells the story.
+  const sorted = useMemo(
+    () => [...rows].sort((a, b) => b.totalPnl - a.totalPnl),
+    [rows],
+  );
+
+  if (sorted.length === 0) {
+    return <p className="text-[13px] text-tertiary">{emptyText}</p>;
+  }
+
+  const winnerKey = sorted[0].totalPnl > 0 ? sorted[0].key : null;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-[13px] text-secondary leading-relaxed">
+        {buildTakeaway(sorted, volumeClause)}
+      </p>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-[13px] text-left">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="pb-2.5 pl-3 border-l-2 border-l-transparent text-[13px] font-medium text-secondary">
+                {columnLabel}
+              </th>
+              <th className="pb-2.5 text-[13px] font-medium text-secondary">
+                Trades
+              </th>
+              <th className="pb-2.5 text-[13px] font-medium text-secondary">
+                Win Rate
+              </th>
+              <th className="pb-2.5 text-[13px] font-medium text-secondary text-right">
+                Avg Profit / Loss
+              </th>
+              <th className="pb-2.5 text-[13px] font-medium text-secondary text-right">
+                Total Profit / Loss
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((s) => {
+              const isWinner = s.key === winnerKey;
+              const isNegative = s.totalPnl < 0;
+              const isSmall = s.count < SMALL_SAMPLE_MIN;
+              return (
+                <tr
+                  key={s.key}
+                  className={cn(
+                    "border-t border-border",
+                    isWinner && "bg-profit/[0.06]",
+                    // Losers recede so the eye skips past them.
+                    isNegative && "opacity-50",
+                  )}
+                >
+                  <td
+                    className={cn(
+                      "py-2.5 pl-3 border-l-2",
+                      isWinner ? "border-l-profit" : "border-l-transparent",
+                    )}
+                  >
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-brand-muted text-brand border border-brand/20">
+                      {s.label}
+                    </span>
+                  </td>
+                  <td className="py-2.5 text-secondary text-xs whitespace-nowrap">
+                    {s.count}
+                    {isSmall && (
+                      <span
+                        className="ml-1.5 text-[10px] text-tertiary"
+                        title={`Only ${s.count} trade${
+                          s.count === 1 ? "" : "s"
+                        } — small sample, read with caution`}
+                      >
+                        · small sample
+                      </span>
+                    )}
+                  </td>
+                  <td
+                    className={cn(
+                      "py-2.5 text-xs font-medium font-mono",
+                      // Don't color a win rate we can't trust.
+                      isSmall
+                        ? "text-tertiary"
+                        : s.winRate >= 50
+                          ? "text-profit"
+                          : "text-loss",
+                    )}
+                  >
+                    {s.winRate.toFixed(0)}%
+                  </td>
+                  <td
+                    className={cn(
+                      "py-2.5 text-right text-xs font-medium font-mono",
+                      s.avgPnl >= 0 ? "text-profit" : "text-loss",
+                    )}
+                  >
+                    {fmtSignedDollar(s.avgPnl)}
+                  </td>
+                  <td
+                    className={cn(
+                      "py-2.5 text-right text-xs font-mono",
+                      isWinner ? "font-semibold" : "font-medium",
+                      s.totalPnl >= 0 ? "text-profit" : "text-loss",
+                    )}
+                  >
+                    {fmtSignedDollar(s.totalPnl)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 /* -- Catalyst Performance --------------------------------------- */
 
 const CATALYST_LABELS: Record<CatalystType, string> = {
@@ -82,15 +285,7 @@ const CATALYST_LABELS: Record<CatalystType, string> = {
   other: "Other",
 };
 
-interface CatalystStats {
-  type: string;
-  count: number;
-  winRate: number;
-  avgPnl: number;
-  totalPnl: number;
-}
-
-function buildCatalystStats(trades: Trade[]): CatalystStats[] {
+function buildCatalystStats(trades: Trade[]): EdgeRow[] {
   const byType = new Map<string, Trade[]>();
   for (const t of trades) {
     if (!t.catalyst_type) continue;
@@ -99,95 +294,32 @@ function buildCatalystStats(trades: Trade[]): CatalystStats[] {
     byType.set(t.catalyst_type, existing);
   }
 
-  const stats: CatalystStats[] = [];
+  const rows: EdgeRow[] = [];
   for (const [type, typeTrades] of byType) {
     const pnls = typeTrades.map(calcPnl);
     const totalPnl = pnls.reduce((a, b) => a + b, 0);
     const wins = pnls.filter((p) => p > 0).length;
-    stats.push({
-      type,
+    rows.push({
+      key: type,
+      label: CATALYST_LABELS[type as CatalystType] ?? type,
       count: typeTrades.length,
       winRate: (wins / typeTrades.length) * 100,
       avgPnl: totalPnl / typeTrades.length,
       totalPnl,
     });
   }
-
-  stats.sort((a, b) => b.count - a.count);
-  return stats;
+  return rows;
 }
 
 function CatalystPerformance({ trades }: { trades: Trade[] }) {
-  const stats = useMemo(() => buildCatalystStats(trades), [trades]);
-
-  if (stats.length === 0) {
-    return (
-      <p className="text-[13px] text-tertiary">
-        No trades with catalyst data yet.
-      </p>
-    );
-  }
-
+  const rows = useMemo(() => buildCatalystStats(trades), [trades]);
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[13px] text-left">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="pb-2.5 text-[13px] font-medium text-secondary">
-              Catalyst
-            </th>
-            <th className="pb-2.5 text-[13px] font-medium text-secondary">
-              Trades
-            </th>
-            <th className="pb-2.5 text-[13px] font-medium text-secondary">
-              Win Rate
-            </th>
-            <th className="pb-2.5 text-[13px] font-medium text-secondary text-right">
-              Avg Profit / Loss
-            </th>
-            <th className="pb-2.5 text-[13px] font-medium text-secondary text-right">
-              Total Profit / Loss
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {stats.map((s) => (
-            <tr key={s.type} className="border-t border-border">
-              <td className="py-2.5">
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-brand-muted text-brand border border-brand/20">
-                  {CATALYST_LABELS[s.type as CatalystType] ?? s.type}
-                </span>
-              </td>
-              <td className="py-2.5 text-secondary text-xs">{s.count}</td>
-              <td
-                className={cn(
-                  "py-2.5 text-xs font-medium font-mono",
-                  s.winRate >= 50 ? "text-profit" : "text-loss",
-                )}
-              >
-                {s.winRate.toFixed(0)}%
-              </td>
-              <td
-                className={cn(
-                  "py-2.5 text-right text-xs font-medium font-mono",
-                  s.avgPnl >= 0 ? "text-profit" : "text-loss",
-                )}
-              >
-                {s.avgPnl >= 0 ? "+" : ""}${s.avgPnl.toFixed(2)}
-              </td>
-              <td
-                className={cn(
-                  "py-2.5 text-right text-xs font-medium font-mono",
-                  s.totalPnl >= 0 ? "text-profit" : "text-loss",
-                )}
-              >
-                {s.totalPnl >= 0 ? "+" : ""}${s.totalPnl.toFixed(2)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <EdgeTable
+      rows={rows}
+      columnLabel="Catalyst"
+      volumeClause="your most-traded setup"
+      emptyText="No trades with catalyst data yet."
+    />
   );
 }
 
@@ -206,15 +338,7 @@ const FLOAT_BUCKETS: FloatBucket[] = [
   { label: ">200M", min: 200_000_000, max: Infinity },
 ];
 
-interface FloatStats {
-  label: string;
-  count: number;
-  winRate: number;
-  avgPnl: number;
-  totalPnl: number;
-}
-
-function buildFloatStats(trades: Trade[]): FloatStats[] {
+function buildFloatStats(trades: Trade[]): EdgeRow[] {
   const bucketTrades: Trade[][] = FLOAT_BUCKETS.map(() => []);
 
   for (const t of trades) {
@@ -228,15 +352,23 @@ function buildFloatStats(trades: Trade[]): FloatStats[] {
     }
   }
 
-  return FLOAT_BUCKETS.map((b, i) => {
+  return FLOAT_BUCKETS.map((b, i): EdgeRow => {
     const bt = bucketTrades[i];
     if (bt.length === 0) {
-      return { label: b.label, count: 0, winRate: 0, avgPnl: 0, totalPnl: 0 };
+      return {
+        key: b.label,
+        label: b.label,
+        count: 0,
+        winRate: 0,
+        avgPnl: 0,
+        totalPnl: 0,
+      };
     }
     const pnls = bt.map(calcPnl);
     const totalPnl = pnls.reduce((a, c) => a + c, 0);
     const wins = pnls.filter((p) => p > 0).length;
     return {
+      key: b.label,
       label: b.label,
       count: bt.length,
       winRate: (wins / bt.length) * 100,
@@ -247,76 +379,14 @@ function buildFloatStats(trades: Trade[]): FloatStats[] {
 }
 
 function FloatSizePerformance({ trades }: { trades: Trade[] }) {
-  const stats = useMemo(() => buildFloatStats(trades), [trades]);
-
-  if (stats.length === 0) {
-    return (
-      <p className="text-[13px] text-tertiary">
-        No trades with float data yet.
-      </p>
-    );
-  }
-
+  const rows = useMemo(() => buildFloatStats(trades), [trades]);
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[13px] text-left">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="pb-2.5 text-[13px] font-medium text-secondary">
-              Float Size
-            </th>
-            <th className="pb-2.5 text-[13px] font-medium text-secondary">
-              Trades
-            </th>
-            <th className="pb-2.5 text-[13px] font-medium text-secondary">
-              Win Rate
-            </th>
-            <th className="pb-2.5 text-[13px] font-medium text-secondary text-right">
-              Avg Profit / Loss
-            </th>
-            <th className="pb-2.5 text-[13px] font-medium text-secondary text-right">
-              Total Profit / Loss
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {stats.map((s) => (
-            <tr key={s.label} className="border-t border-border">
-              <td className="py-2.5">
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-brand-muted text-brand border border-brand/20">
-                  {s.label}
-                </span>
-              </td>
-              <td className="py-2.5 text-secondary text-xs">{s.count}</td>
-              <td
-                className={cn(
-                  "py-2.5 text-xs font-medium font-mono",
-                  s.winRate >= 50 ? "text-profit" : "text-loss",
-                )}
-              >
-                {s.winRate.toFixed(0)}%
-              </td>
-              <td
-                className={cn(
-                  "py-2.5 text-right text-xs font-medium font-mono",
-                  s.avgPnl >= 0 ? "text-profit" : "text-loss",
-                )}
-              >
-                {s.avgPnl >= 0 ? "+" : ""}${s.avgPnl.toFixed(2)}
-              </td>
-              <td
-                className={cn(
-                  "py-2.5 text-right text-xs font-medium font-mono",
-                  s.totalPnl >= 0 ? "text-profit" : "text-loss",
-                )}
-              >
-                {s.totalPnl >= 0 ? "+" : ""}${s.totalPnl.toFixed(2)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <EdgeTable
+      rows={rows}
+      columnLabel="Float Size"
+      volumeClause="the float band you trade most"
+      emptyText="No trades with float data yet."
+    />
   );
 }
 
@@ -373,28 +443,21 @@ export default function Analytics() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium text-primary tracking-tight">
+        <h2 className="page-title">
           Analytics
         </h2>
       </div>
 
-      {/* Quick date range */}
-      <QuickDatePills filters={filters} onUpdate={updateFilters} />
-
       {/* Filters */}
-      <DashboardFilters
+      <FilterBar
         trades={trades}
         filters={filters}
         onUpdate={updateFilters}
-      />
-      <FilterSummary
-        total={trades.length}
         filtered={filteredTrades.length}
-        from={filters.from}
-        to={filters.to}
+        total={trades.length}
       />
 
       {/* Tabs */}
@@ -405,11 +468,12 @@ export default function Analytics() {
         {activeTab === "timing" && (
           <>
             <div>
-              <h3 className="text-[13px] font-medium text-secondary mb-4">Time of Day</h3>
+              <p className="metric-label mb-4">Time of Day</p>
               <TimeOfDayAnalysis trades={filteredTrades} />
             </div>
-            <div className="border-t border-white/[0.04] pt-6">
-              <h3 className="text-[13px] font-medium text-secondary mb-4">Hold Time</h3>
+            <div className="section-divider" />
+            <div>
+              <p className="metric-label mb-4">Hold Time</p>
               <HoldTimeAnalysis trades={filteredTrades} />
             </div>
           </>
@@ -418,11 +482,12 @@ export default function Analytics() {
         {activeTab === "edge" && (
           <>
             <div>
-              <h3 className="text-[13px] font-medium text-secondary mb-4">Catalyst Performance</h3>
+              <p className="metric-label mb-4">Catalyst Performance</p>
               <CatalystPerformance trades={filteredTrades} />
             </div>
-            <div className="border-t border-white/[0.04] pt-6">
-              <h3 className="text-[13px] font-medium text-secondary mb-4">Float Size</h3>
+            <div className="section-divider" />
+            <div>
+              <p className="metric-label mb-4">Float Size</p>
               <FloatSizePerformance trades={filteredTrades} />
             </div>
           </>

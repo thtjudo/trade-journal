@@ -200,8 +200,8 @@ export default function Journal() {
         {/* Header with date and save status */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-medium text-primary">Journal</h2>
-            <p className="text-[13px] text-secondary mt-0.5">
+            <h2 className="page-title">Journal</h2>
+            <p className="numeric text-[13px] text-secondary mt-2 leading-tight">
               {new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
             </p>
           </div>
@@ -249,20 +249,30 @@ export default function Journal() {
 
         {/* Trades summary */}
         {tradeCount > 0 && (
-          <div className="border-t border-white/[0.04] pt-3 flex flex-wrap gap-x-6 gap-y-1.5">
-            <span className="text-[13px] font-medium text-secondary">
-              Trades <span className="text-[13px] font-medium text-primary ml-1">{tradeCount}</span>
-            </span>
-            <span className="text-[13px] font-medium text-secondary">
-              Profit / Loss{" "}
-              <span className={cn("text-[13px] font-medium font-mono ml-1", totalPnl >= 0 ? "text-profit" : "text-loss")}>
-                {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}
-              </span>
-            </span>
-            <span className="text-[13px] font-medium text-secondary">
-              Win Rate <span className="text-[13px] font-medium text-primary ml-1">{winRate}%</span>
-            </span>
-          </div>
+          <>
+            <div className="section-divider" />
+            <div className="flex flex-wrap gap-x-8 gap-y-2">
+              <div>
+                <p className="metric-label mb-1">Trades</p>
+                <p className="numeric text-[18px] font-semibold text-primary leading-tight">{tradeCount}</p>
+              </div>
+              <div>
+                <p className="metric-label mb-1">Profit / Loss</p>
+                <p
+                  className={cn(
+                    "numeric text-[18px] font-semibold leading-tight",
+                    totalPnl >= 0 ? "text-profit" : "text-loss"
+                  )}
+                >
+                  {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <p className="metric-label mb-1">Win Rate</p>
+                <p className="numeric text-[18px] font-semibold text-primary leading-tight">{winRate}%</p>
+              </div>
+            </div>
+          </>
         )}
 
         {entryError ? (
@@ -295,7 +305,7 @@ export default function Journal() {
             </div>
 
             {/* Post-market Review */}
-            <div className="h-px bg-white/[0.04]" />
+            <div className="section-divider" />
             <div>
               <label className={labelClass}>Post-market Review</label>
               <textarea
@@ -308,7 +318,7 @@ export default function Journal() {
             </div>
 
             {/* Lessons Learned */}
-            <div className="h-px bg-white/[0.04]" />
+            <div className="section-divider" />
             <div>
               <label className={labelClass}>Lessons Learned</label>
               <textarea
@@ -375,7 +385,7 @@ export default function Journal() {
             </div>
 
             {/* Goals for Tomorrow */}
-            <div className="h-px bg-white/[0.04]" />
+            <div className="section-divider" />
             <div>
               <label className={labelClass}>Goals for Tomorrow</label>
               <textarea

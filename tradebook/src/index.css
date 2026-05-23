@@ -49,8 +49,9 @@
   --color-ring: rgba(255, 255, 255, 0.12);
 
   /* ── Fonts ── */
-  --font-sans: 'Geist Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Geist', 'Geist Sans', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Geist Mono', ui-monospace, monospace;
 
   /* ── Radius ── */
   --radius-sm: 4px;
@@ -122,12 +123,13 @@ body {
 
 /* ── Selection ── */
 ::selection {
-  background: rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.35);
   color: #fafafa;
 }
 
 /* ── Typography ── */
 h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
   letter-spacing: -0.02em;
   font-weight: 500;
 }
@@ -226,6 +228,119 @@ input:hover, select:hover, textarea:hover {
   background: var(--color-border);
 }
 
+/* ── Design-language baseline (Behavior/Tilt + Dashboard + History + Analytics + Journal) ── */
+
+/* Metric card — used for Tilt Episodes, Cost of Tilt, etc. */
+.metric-card {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+/* Episode / detail card — bigger radius and padding */
+.episode-card {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 24px;
+  transition: border-color 200ms var(--ease-spring);
+}
+.episode-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.episode-card:hover .episode-chevron {
+  opacity: 1;
+  transform: translateX(0);
+}
+.episode-chevron {
+  color: var(--color-brand);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 200ms var(--ease-spring), transform 200ms var(--ease-spring);
+}
+
+/* Section gradient divider */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  border: 0;
+}
+
+/* Small all-caps metric label — 10px uppercase tracking-widest text-zinc-500 */
+.metric-label {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #71717a; /* zinc-500 */
+}
+
+/* Hero metric numeral — 48px JetBrains Mono 600 */
+.hero-metric {
+  font-family: var(--font-mono);
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-feature-settings: 'tnum' 1, 'cv02' 1, 'cv03' 1;
+}
+
+/* Page title — 28px Geist 500 */
+.page-title {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+}
+
+/* Numeric data utility — applies JetBrains Mono with tnum + tight leading */
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Tag-style badge per spec (subtle bg @ ~12%, full color, 10px upper tracking-wide) */
+.tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.tag-badge--brand  { background: rgba(59, 130, 246, 0.12); color: var(--color-brand); }
+.tag-badge--amber  { background: rgba(245, 158, 11, 0.12); color: var(--color-amber); }
+.tag-badge--loss   { background: rgba(239, 68, 68, 0.12);  color: var(--color-loss); }
+.tag-badge--profit { background: rgba(34, 197, 94, 0.12);  color: var(--color-profit); }
+.tag-badge--orange { background: rgba(249, 115, 22, 0.12); color: #fb923c; }
+.tag-badge--purple { background: rgba(168, 85, 247, 0.12); color: #c084fc; }
+.tag-badge--zinc   { background: rgba(255, 255, 255, 0.04); color: #a1a1aa; }
+
+/* Red dot indicator (for alert page heading) */
+.alert-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--color-loss);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+  vertical-align: middle;
+}
+
 /* ── Kbd tag ── */
 kbd {
   display: inline-flex;
@@ -306,6 +421,16 @@ tbody tr:hover {
 .animate-slide-up  { animation: slide-up 0.35s var(--ease-spring) forwards; }
 .animate-ping      { animation: ping 1s var(--ease-out) infinite; }
 .animate-slide-down { animation: slide-down 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* ── Filter popover ── */
+@keyframes popover-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-popover {
+  transform-origin: top right;
+  animation: popover-in 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+}
 
 /* ── Equity curve ── */
 .equity-line {
@@ -452,7 +577,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   content: '';
   position: absolute;
   inset: -1px;
-  background: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.12) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(199, 255, 61, 0.1) 0%, transparent 60%);
   border-radius: 12px;
   pointer-events: none;
   z-index: -1;

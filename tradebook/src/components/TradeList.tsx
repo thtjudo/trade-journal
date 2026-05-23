@@ -194,20 +194,20 @@ export default function TradeList({
     <div className="space-y-4">
       {/* Header bar */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-4">
-          <h2 className="text-base font-medium text-white tracking-tight">
+        <div className="flex items-baseline gap-4">
+          <h2 className="page-title">
             Trade History
           </h2>
           <div className="flex items-center gap-1.5 text-[12px]">
-            <span className="text-tertiary">{totalCount} trades</span>
+            <span className="numeric text-tertiary">{totalCount} trades</span>
             <span className="text-zinc-700">·</span>
-            <span className="text-profit font-medium">{pageWins}W</span>
+            <span className="numeric text-profit font-medium">{pageWins}W</span>
             <span className="text-zinc-700">/</span>
-            <span className="text-loss font-medium">{pageLosses}L</span>
+            <span className="numeric text-loss font-medium">{pageLosses}L</span>
             <span className="text-zinc-700">·</span>
             <span
               className={cn(
-                "font-medium font-mono",
+                "numeric font-medium",
                 pagePnl >= 0 ? "text-profit" : "text-loss"
               )}
             >
