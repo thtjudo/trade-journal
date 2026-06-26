@@ -3,6 +3,7 @@ import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
 import { FREE_FEATURES, PRO_FEATURES, MOMENTUM_CALLOUTS } from "../data/landingData";
+import { Instagram } from "lucide-react";
 
 /* ── Helpers ── */
 
@@ -375,7 +376,7 @@ export default function LandingPage() {
               MyTradeBook
             </span>
             <span className="text-xs text-tertiary">
-              Made by ohjudo
+              Made by thtjudo
             </span>
           </div>
           <div className="flex items-center gap-6 text-xs text-tertiary">
@@ -385,13 +386,46 @@ export default function LandingPage() {
             <Link to="/terms" className="hover:text-brand/80 transition-colors">
               Terms
             </Link>
+          </div>
+        </div>
+        <div className="max-w-5xl mx-auto px-4 pb-10 flex flex-col items-center sm:items-start gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-tertiary">Made by thtjudo</span>
             <a
-              href="mailto:countingthis@gmail.com?subject=MyTradeBook%20-%20Feedback%2FQuestions&body=Hi%2C%20feel%20free%20to%20reach%20out%20with%20feedback%2C%20questions%2C%20or%20anything%20else%20about%20MyTradeBook."
-              className="hover:text-brand/80 transition-colors"
+              href="https://instagram.com/thtjudo"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram @thtjudo"
+              className="text-tertiary hover:text-brand transition-colors"
             >
-              Contact
+              <Instagram className="w-4 h-4" />
+            </a>
+            <a
+              href="https://x.com/thtjudo"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="X @thtjudo"
+              className="text-tertiary hover:text-brand transition-colors"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="w-4 h-4"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
             </a>
           </div>
+          <p className="text-xs text-tertiary">
+            Contact me for any reason at{" "}
+            <a
+              href="mailto:countingthis@gmail.com"
+              className="text-brand hover:text-brand/80 transition-colors font-medium"
+            >
+              countingthis@gmail.com
+            </a>
+          </p>
         </div>
       </footer>
     </div>
