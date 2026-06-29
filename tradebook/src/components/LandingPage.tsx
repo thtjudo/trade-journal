@@ -3,7 +3,6 @@ import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
 import { FREE_FEATURES, PRO_FEATURES, MOMENTUM_CALLOUTS } from "../data/landingData";
-import { Instagram } from "lucide-react";
 
 /* ── Helpers ── */
 
@@ -398,7 +397,20 @@ export default function LandingPage() {
               aria-label="Instagram @thtjudo"
               className="text-tertiary hover:text-brand transition-colors"
             >
-              <Instagram className="w-4 h-4" />
+              <svg
+                viewBox="0 0 24 24"
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+              </svg>
             </a>
             <a
               href="https://x.com/thtjudo"
