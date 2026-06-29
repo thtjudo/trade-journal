@@ -139,7 +139,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ───── Hero Visual — Journal Screenshot ───── */}
+        {/* ───── Hero Visual — Dashboard Screenshot ───── */}
         <section className="px-4 pb-20 sm:pb-28 hero-enter-d2">
           <div className="max-w-4xl mx-auto">
             <div className="screenshot-glow">
@@ -148,14 +148,14 @@ export default function LandingPage() {
                   <span /><span /><span />
                 </div>
                 <img
-                  src="/journal-preview.png"
-                  alt="MyTradeBook journal — plan your day, review trades, track lessons learned"
+                  src="/dashboard-preview.png"
+                  alt="MyTradeBook dashboard — P&L, win rate, equity curve, and activity heatmap"
                   loading="eager"
                 />
               </div>
             </div>
             <p className="text-center text-tertiary text-xs mt-5">
-              Plan your day. Review every trade. Build the habits that pay.
+              P&L, win rate, equity curve — know if you're improving at a glance.
             </p>
           </div>
         </section>
@@ -198,14 +198,14 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ───── Dashboard Visual ───── */}
+        {/* ───── Journal Visual ───── */}
         <section className="px-4 py-20 sm:py-28 reveal">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl sm:text-3xl font-medium text-primary text-center mb-4">
-              Track Your Edge
+              Review Every Trade
             </h2>
             <p className="text-tertiary text-[13px] text-center mb-12 max-w-lg mx-auto">
-              P&L, win rate, equity curve, and activity heatmap — everything you need to know if you're improving, at a glance.
+              Plan your day, review every trade, and track the lessons learned — build the habits that pay.
             </p>
             <div className="screenshot-glow">
               <div className="screenshot-frame">
@@ -213,8 +213,8 @@ export default function LandingPage() {
                   <span /><span /><span />
                 </div>
                 <img
-                  src="/dashboard-preview.png"
-                  alt="MyTradeBook dashboard — P&L, win rate, equity curve, and activity heatmap"
+                  src="/journal-preview.png"
+                  alt="MyTradeBook journal — plan your day, review trades, track lessons learned"
                   loading="lazy"
                 />
               </div>
@@ -373,9 +373,6 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5">
             <span className="text-[13px] font-medium text-primary">
               MyTradeBook
-            </span>
-            <span className="text-xs text-tertiary">
-              Made by thtjudo
             </span>
           </div>
           <div className="flex items-center gap-6 text-xs text-tertiary">
